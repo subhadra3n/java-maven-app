@@ -1,3 +1,69 @@
+#hands on pipeline upto push image to dockerhub
+
+pipeline {
+    agent any
+    tools {
+        maven 'maven3'
+    }
+    stages {
+        stage('clean workspace') {
+            steps {
+              cleanWs()
+            }
+        }
+         stage('Git checkout') {
+            steps {
+              git branch: 'main', credentialsId: 'git-cred', url: 'https://github.com/subhadra3n/java-maven-app.git'
+            }
+        }
+        stage ('maven'){
+            steps{
+                 sh 'mvn clean package'
+            }
+        }
+       stage('Docker Build') {
+            steps {
+                script {
+                    def imageName = 'anuragk21/maven-cloudaseem-app:latest'
+                    echo "Building Docker image: ${imageName}"
+                    sh "docker build -t ${imageName} ."
+                }
+            }
+        }
+        stage('Docker Push') {
+            steps {
+                script {
+                    def imageName = 'anuragk21/maven-cloudaseem-app:latest'
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub-creds',  // Docker Hub credentials stored in Jenkins
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
+                        echo "Pushing Docker image to Docker Hub..."
+                        sh """
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker push ${imageName}
+                        """
+                    }
+                }
+            }
+             
+        }
+        
+        
+    }
+    
+}
+
+
+
+
+
+
+
+
+
+____________________________________________________________________________________________________----
 # Project Setup using below tools
 
 1) Maven - Build tool
